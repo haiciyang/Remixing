@@ -1,0 +1,9 @@
+python3 generate_data.py --n_src 4 --length_p_sec 1 --batch 2 --save_name '0322_test_4src' --piano --drum --bass --guitar --dataset 'test' --size 100
+
+CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --weight_src 1 --weight_mix 3 --trainset ../Data/0322_train_4src.pth --testset ../Data/0322_test_4src.pth --remix_ratio 2.5 1.5 0.5 1 --ratio_on_rep
+
+--baseline --debugging 
+--transfer_model 0319_134808
+
+
+--transfer_model 0308_104450

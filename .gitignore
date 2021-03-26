@@ -1,0 +1,9 @@
+.ipynb_checkpoints/
+Data/
+Model/
+Result/
+*.wav
+*.pth
+slakh-utils
+
+

@@ -4,6 +4,7 @@ Model/
 Result/
 *.wav
 *.pth
+*.p
 slakh-utils
 
 

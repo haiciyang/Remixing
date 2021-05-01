@@ -1,9 +1,29 @@
-python3 generate_data.py --n_src 4 --length_p_sec 1 --batch 2 --save_name '0322_test_4src' --piano --drum --bass --guitar --dataset 'test' --size 100
+python3 generate_SlakhData.py --n_src 4 --length_p_sec 1 --batch 2 --save_name '0408_slakh_train_4src_1' --dataset 'train'
 
-CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --weight_src 1 --weight_mix 3 --trainset ../Data/0322_train_4src.pth --testset ../Data/0322_test_4src.pth --remix_ratio 2.5 1.5 0.5 1 --ratio_on_rep
+python3 generate_MUSdata_2.py --n_src 4 --length_p_sec 1 --batch 2 --save_name '0411_mus_test_4src' --dataset 'test'
+
+CUDA_VISIBLE_DEVICES=0, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 5 --weight_src 1 --weight_mix 5 --trainset ../Data/0404_slakh_train_5src.pth --testset ../Data/0404_slakh_test_5src.pth --ratio_on_rep --debugging 
+--ratio_on_rep
 
 --baseline --debugging 
 --transfer_model 0319_134808
 
 
 --transfer_model 0308_104450
+
+CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 5 --weight_src 1 --weight_mix 5 --trainset MUSDB --ratio_on_rep --debugging
+
+CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 2 --weight_src 1 --weight_mix 5 --trainset 0411_mus_train_4src --train_num_subset 1 --testset 0411_mus_test_4src --test_num_subset 1 --baseline
+
+CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 1 --weight_src 1 --weight_mix 5 --trainset Slakh--baseline --debugging
+
+CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 3 --batch 3 --weight_src 1 --weight_mix 4 --trainset MUSDB --ratio_on_rep --transfer_model 0425_172718
+
+CUDA_VISIBLE_DEVICES=0, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 4 --batch 3 --weight_src 1 --weight_mix 1 --trainset MUSDB --transfer_model 0418_221941
+
+CUDA_VISIBLE_DEVICES=0, python3 eval_on_samples.py  --model_name1 0428_163018 --model_name2 0428_163018 --n_src 4 --dataset MUSDB
+
+CUDA_VISIBLE_DEVICES=1, python3 eval_on_samples.py  --model_name1 0428_163148 --model_name2 0428_163018 --n_src 4 --dataset MUSDB --ratio_on_rep1
+CUDA_VISIBLE_DEVICES=0, python3 eval_on_samples.py  --model_name1 0428_163018 --n_src 4 --dataset MUSDB
+
+CUDA_VISIBLE_DEVICES=2, python3 eval_on_samples.py  --model_name1 0417_200832 --model_name2 0417_200917 --n_src 4 --dataset MUSDB --ratio_on_rep1

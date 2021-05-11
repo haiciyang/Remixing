@@ -23,7 +23,7 @@ folderPath = '/media/sdc1/slakh2100_wav/'+DATASET+'/*'
 global_max = 0
 all_length = []
 total_file = 100
-n_src = 4
+n_src = 5
 
 for i, track in enumerate(glob.glob(folderPath)):
     
@@ -126,7 +126,7 @@ for i, track in enumerate(glob.glob(folderPath)):
 #     if not sources:
     print(len(sources))
     all_length.append(len(sources))
-    torch.save(torch.tensor(sources),'../../Data/Slakh/eval/'+str(total_file) +'.pt')
+    torch.save(torch.tensor(sources),'../../Data/Slakh/eval_5/'+str(total_file) +'.pt')
     total_file += 1
 #     else:
 #         print('Empty array')

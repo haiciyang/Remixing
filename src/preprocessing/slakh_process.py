@@ -15,7 +15,7 @@ import os
 #         print('delete file',i, l)
 #         os.remove(path + str(i) + '.pt') 
 
-DATASET = 'train'
+DATASET = 'test'
 SEC_P_SEG = 1
 SR = 44100
 
@@ -23,7 +23,7 @@ folderPath = '/media/sdc1/slakh2100_wav/'+DATASET+'/*'
 global_max = 0
 all_length = []
 total_file = 0
-n_src = 4
+n_src = 5
 
 for i, track in enumerate(glob.glob(folderPath)):
     
@@ -124,7 +124,7 @@ for i, track in enumerate(glob.glob(folderPath)):
     if not isinstance(sources, type(None)):
         print(len(sources))
         all_length.append(len(sources))
-        torch.save(torch.tensor(sources),'../Data/Slakh/'+DATASET+'/'+str(total_file) +'.pt')
+        torch.save(torch.tensor(sources),'../../Data/Slakh/'+DATASET+'_5/'+str(total_file) +'.pt')
         total_file += 1
     else:
         print('Empty array')
@@ -132,4 +132,4 @@ for i, track in enumerate(glob.glob(folderPath)):
 #     break
 
 config = {'global_max':global_max, 'all_length': all_length, 'total_file': total_file}
-torch.save(config,'../Data/Slakh/'+DATASET+'/config.pt')
+torch.save(config,'../../Data/Slakh/'+DATASET+'_5/config.pt')

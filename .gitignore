@@ -6,5 +6,6 @@ Result/
 *.pth
 *.p
 slakh-utils
-
+*.pdf
+eval_results/
 

@@ -9,7 +9,7 @@ from asteroid.models import ConvTasNet
 from asteroid.utils.torch_utils import pad_x_to_y
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 
-DB_FLUC = 10
+DB_FLUC = 12
 
 def SISDR(s,sr,  cuda = False):
     
@@ -57,9 +57,6 @@ def get_mir_scores(s, n, x, sr):
     # Take the first element from list for source's performance
     return sdr[0],sir[0],sar[0]
 
-
-def db_to_amp(x):
-    return torch.pow(10, torch.true_divide(x,20))
 
 def db_to_amp(x):
     return torch.pow(10, torch.true_divide(x,20))

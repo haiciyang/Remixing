@@ -9,7 +9,7 @@ from asteroid.models import ConvTasNet
 from asteroid.utils.torch_utils import pad_x_to_y
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 
-DB_FLUC = 10
+DB_FLUC = 12
 
 def SISDR(s,sr,  cuda = False):
     

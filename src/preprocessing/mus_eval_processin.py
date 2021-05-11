@@ -49,15 +49,15 @@ for i, track in enumerate(mus):
 
     seg_interval = 44100//10*9
     sources = []
-    for i in range(length//seg_interval-1):
-        seg = instru_wav[:, i*seg_interval:i*seg_interval+seg_length]
+    for k in range(length//seg_interval-1):
+        seg = instru_wav[:, k*seg_interval:k*seg_interval+seg_length]
         sources.append(seg) #shape (4, L)
         
     all_length.append(len(sources))
     
-    torch.save(torch.tensor(sources),'../../Data/MUSDB/eval/mus_' + str(i) +'.pt')
+    torch.save(torch.tensor(sources),'../../Data/MUSDB/eval0506/mus_' + str(i) +'.pt')
 #     break
     
 config = {'global_max':global_max, 'all_length': all_length}
 
-torch.save(config, '../../Data/MUSDB/eval/config.pt')
+torch.save(config, '../../Data/MUSDB/eval0506/config.pt')

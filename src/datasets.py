@@ -60,6 +60,8 @@ class Slakh_data(data.Dataset):
         
         self.dataset = dataset
         self.path = '../Data/Slakh/' + dataset + '/'
+        if n_src == 5:
+            self.path = '../Data/Slakh/' + dataset + '_5/'
         config = torch.load(self.path + 'config.pt')
         self.global_max = 53.1 # max of test and train
         self.all_length = config['all_length']

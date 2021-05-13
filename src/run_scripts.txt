@@ -33,4 +33,6 @@ CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 1000 --lr 0.0001  --n
 
 CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 1000 --lr 0.0001  --n_src 2 --batch 3 --weight_src 1 --weight_mix 1 --trainset Slakh --ratio_on_rep
 
-CUDA_VISIBLE_DEVICES=3, python3 eval_on_samples.py  --model_name1 0417_200733 --n_src 4 --dataset Slakh 
+CUDA_VISIBLE_DEVICES=7 python3 eval_on_samples.py  --model_name1 0505_120551 --n_src 4 --dataset Slakh --ratio_on_rep1 --adjust 3
+
+CUDA_VISIBLE_DEVICES=0, python3 train_model.py --max_epoch 1000 --lr 0.0001  --n_src 3 --batch 3 --weight_src 0 --weight_mix 1 --trainset Slakh --ratio_on_rep

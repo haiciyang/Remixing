@@ -17,13 +17,31 @@ CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_
 
 CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 1 --weight_src 1 --weight_mix 5 --trainset Slakh--baseline --debugging
 
-CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 3 --batch 3 --weight_src 1 --weight_mix 4 --trainset MUSDB --ratio_on_rep --transfer_model 0425_172718
+CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 4 --batch 3 --weight_src 1 --weight_mix 4 --trainset MUSDB 
+--debugging --ratio_on_rep --transfer_model 0425_172718
 
 CUDA_VISIBLE_DEVICES=0, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 4 --batch 3 --weight_src 1 --weight_mix 1 --trainset MUSDB --transfer_model 0418_221941
 
 CUDA_VISIBLE_DEVICES=0, python3 eval_on_samples.py  --model_name1 0428_163018 --model_name2 0428_163018 --n_src 4 --dataset MUSDB
 
 CUDA_VISIBLE_DEVICES=1, python3 eval_on_samples.py  --model_name1 0428_163148 --model_name2 0428_163018 --n_src 4 --dataset MUSDB --ratio_on_rep1
-CUDA_VISIBLE_DEVICES=0, python3 eval_on_samples.py  --model_name1 0428_163018 --n_src 4 --dataset MUSDB
 
-CUDA_VISIBLE_DEVICES=1, python3 eval_on_samples.py  --model_name1 0417_200832 --model_name2 0417_200917 --n_src 4 --dataset Slakh --ratio_on_rep1
+CUDA_VISIBLE_DEVICES=1, python3 eval_on_samples.py  --model_name1 0417_200733 --n_src 4 --dataset Slakh
+
+
+
+CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 1000 --lr 0.0001  --n_src 5 --batch 3 --weight_src 1 --weight_mix 1 --trainset Slakh --ratio_on_rep
+
+CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 1000 --lr 0.0001  --n_src 2 --batch 3 --weight_src 1 --weight_mix 1 --trainset Slakh --ratio_on_rep
+
+
+-- n=4 --
+Baseline       Prop1       prop1       prop1       Prop2       prop2      prop2
+                1:1         1:4         0:1         1:1         1:4        0:1 
+0417_200733 0505_120648 0505_120754 0421_163115 0505_120551 0505_120845 0422_182403 -- slakh
+0418_221450 0505_220936 0505_220715 0421_163022 0505_221055 0505_220633 0421_163041 -- MUSDB
+
+
+CUDA_VISIBLE_DEVICES=3 python3 eval_on_samples.py  --model_name1 0505_220715 --n_src 4 --dataset MUSDB
+
+CUDA_VISIBLE_DEVICES=0, python3 train_model.py --max_epoch 1000 --lr 0.0001  --n_src 3 --batch 3 --weight_src 0 --weight_mix 1 --trainset Slakh --ratio_on_rep

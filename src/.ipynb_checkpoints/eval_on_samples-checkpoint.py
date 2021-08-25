@@ -114,26 +114,26 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
         Base_model.load_state_dict(torch.load('../Model/'+ model_name2 +'.pth'))
         Base_model.eval() 
         
-    song_idx = 0
-    seg_idx = 0
+    idx = 0
+#     seg_idx = 0
 
     for f in tqdm(files):
         
-        if not isinstance(adjust, type(None)):
+#         if not isinstance(adjust, type(None)):
             
-            input_ratio_list = []
-            for r in range(-24, 27, 3):
-                scale = [0,0,0,0]
-                scale[adjust] = r
-                input_ratio_list.append(scale)
-        else:
-            input_ratio_all = []
-            interval = 3 if n_src == 4 else 6
-            for a in range(n_src):
-                for r in range(-24, 27, interval):
-                    scale = [0] * n_src
-                    scale[a] = r
-                    input_ratio_all.append(scale)
+#             input_ratio_list = []
+#             for r in range(-24, 27, 3):
+#                 scale = [0,0,0,0]
+#                 scale[adjust] = r
+#                 input_ratio_list.append(scale)
+#         else:
+#             input_ratio_all = []
+#             interval = 3 if n_src == 4 else 6
+#             for a in range(n_src):
+#                 for r in range(-24, 27, interval):
+#                     scale = [0] * n_src
+#                     scale[a] = r
+#                     input_ratio_all.append(scale)
                 
 #             if n_src == 2:
 #                 input_ratio_list = [[12, 0],[0, 12],[0, 0],[12, 12], [12, -12],[-12, 12]]
@@ -144,38 +144,48 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
 #             if n_src == 5:
 #                 input_ratio_list = [[12, 0,0,0,0],[0, 12,0,0,0],[0, 0,12,0,0],[0, 0,0,12,0],[0, 0,0,0,12],[0, 0,0,0,0],[12, 12, 0, 0,0], [12, 0, 12, 0,0],  [12, 0, 0, 12,0], [12, 0, 0, 0, 12,],[0, 12, 12, 0, 0], [0, 12, 0, 12, 0], [0, 12, 0, 0,12], [0, 0, 12, 12, 0], [0, 0, 12,  0, 12],[0, 0, 0,12, 12],[12, -12,-12,-12, -12],[-12, 12,-12,-12, -12],[-12, -12,12,-12, -12],[-12, -12,-12,12, -12],[-12, -12,-12, -12,12]]
         
-#         if song_idx == 50:
-#             break
+        if idx == 11:
+            break
+        
+        input_ratio_list = [[12, 0,0,0],[0, 12,0,0],[0, 0,12,0],[0, 0,0,12], [0,0,0,0]]
+
+#         input_ratio_list = [[0,0,0,0]]
         
         if 'config' not in f:
             
             piece = torch.load(f)[:,:n_src, :] # (N, n_src, L)
             sdr_piece_list = []
-            song_idx += 1
+            idx += 1
             
-            for i in range(0, len(piece), 30):
+            i = len(piece)//30//2*30
+            for l in range(1):
                 sources = piece[i:i+30]
                 if len(sources) != 30:
                     continue
                     
-                if not isinstance(adjust, type(None)): ## For the ratio specific task, only use one segment from each songs
-#                     print(i)
-#                     print(len(piece)//30//2*30)
-                    if i != len(piece)//30//2*30:
-                        continue
-#                     fake()
+#                 if not isinstance(adjust, type(None)): ## For the ratio specific task, only use one segment from each songs
+# #                     print(i)
+# #                     print(len(piece)//30//2*30)
+#                     if i != len(piece)//30//2*30:
+#                         continue
+# #                     fake()
         
                 mixture = torch.sum(sources, 1).to(torch.float).cuda() # (N, L)
 
-                seg_idx += 1
+#                 seg_idx += 1
 #                 print('song', song_idx, 'seg', seg_idx) 
                 
-                if isinstance(adjust, type(None)): # Not running every ratio for every segment
-                    input_ratio_list = [input_ratio_all[seg_idx % len(input_ratio_all)]]
+#                 if isinstance(adjust, type(None)): # Not running every ratio for every segment
+#                     input_ratio_list = [input_ratio_all[seg_idx % len(input_ratio_all)]]
 
                 if not ratio_on_rep1:
                     with torch.no_grad():
                         est_sources, masked_tf_rep = G_model(mixture, None)    
+                    
+                rec_sources = window_and_recover(sources)
+                orig_mix = torch.sum(rec_sources, 0)
+                
+                torch.save(orig_mix,'{}/{}_mixture_{}.pth'.format(path, model_name1, str(idx)))
                 
                 # ===== calculate performance under different remix scale ====
                 for i_ratio, input_ratio in enumerate(input_ratio_list):
@@ -188,11 +198,12 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
                         with torch.no_grad():
                             est_sources, masked_tf_rep = G_model(mixture, mask_ratio)
                             # est_sources - shape (N, n_src, L)
-
-                    rec_sources = window_and_recover(sources)
+                    
+                    
                     rec_est_sources1 = window_and_recover(est_sources) # (n_src, L)
 
                     ratio = source_ratio[0].cpu().data # shape-(n_src, 1)
+#                     print(ratio[:,0])
                     ratio_list.append(ratio[:,0])
                     remixture = torch.sum(rec_sources * ratio, 0)
                     if ratio_on_rep1:
@@ -206,13 +217,16 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
                
                     #### record score and save results
                     scores.append(mix_sdr) 
+                    
+                    
 
-
-#                 print(mix_sdr)
-#                 torch.save(remixture, '{}/{}_remixture_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
-#                 torch.save(rec_sources1, '{}/{}_sources_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
-#                 torch.save(rec_est_sources1, '{}/{}_est_sources_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
-#                 torch.save(est_remixture1, '{}/{}_est_remixture_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
+#                     i_ratio = 20
+#                     print(mix_sdr)
+                    torch.save(remixture, '{}/{}_remixture_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
+#                     torch.save(orig_mix,'{}/{}_mixture_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
+    #                 torch.save(rec_sources1, '{}/{}_sources_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
+#                     torch.save(rec_est_sources1, '{}/{}_est_sources_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
+                    torch.save(est_remixture1, '{}/{}_est_remixture_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
                 
                 # ==== calculate BSS score for one time ====
 #                 if i_ratio == 0:
@@ -280,7 +294,7 @@ if __name__ == '__main__':
     scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratios = eval_model(n_src = args.n_src, model_name1 = args.model_name1 , dataset = args.dataset, input_ratio=None, ratio_on_rep1 = args.ratio_on_rep1, model_name2 = args.model_name2, path=path, adjust = args.adjust)
     # scores -> [15, N]
     # bss_sdr_list -> [N, 4]
-    print('remixture sdr', np.mean(scores), np.std(scores))
+#     print('remixture sdr', np.mean(scores), np.std(scores))
 #     print('source sdr', np.mean(bss_sdr_list, 0), np.std(bss_sdr_list, 0))
 #     print('source sir', np.mean(bss_sir_list, 0), np.std(bss_sir_list, 0))
 #     print('source sar', np.mean(bss_sar_list, 0), np.std(bss_sar_list, 0))

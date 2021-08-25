@@ -37,6 +37,29 @@ def SDR(s,sr,  cuda = False):
     else:
         return sdr.cpu().data.numpy()
 
+def SDSDR(s,sr,  cuda = False):
+    # Input s, sr - (bt, n_src, L)
+    eps = 1e-20
+    
+    scale = torch.sum(sr * s, dim = 1) / (torch.sum(s**2, dim = 1) + eps)
+    scale = scale.unsqueeze(dim = 1) # shape - [bt,1]
+
+    sdsdr = torch.mean(10*torch.log10(torch.sum((s*scale)**2, dim = 1)/(torch.sum((s-sr)**2, dim=1)+eps)+eps))
+
+    if cuda:
+        return sdsdr
+    else:
+        return sdsdr.cpu().data.numpy()
+    
+
+def sdr_score(s, sr, f, cuda):
+    if f == 'SDSDR':
+        return SDSDR(s,sr, cuda)
+    elif f == 'SDR':
+        return SDR(s,sr, cuda)
+    else:
+        raise ValueError("Unrecognized loss function")
+
     
 def get_mir_scores(s, n, x, sr):
     """

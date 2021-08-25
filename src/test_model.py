@@ -14,7 +14,7 @@ from generate_SlakhData import Slakh_data
 from asteroid.utils.torch_utils import pad_x_to_y
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 
-def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix):
+def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix, loss):
     
 #     source_ratio = remix_ratio[None, :, None].cuda() # shape - (None, n_src, None)
 #     mask_ratio = remix_ratio[None, :, None, None].cuda() # shape - (None, n_src, None, None) Normalized version
@@ -58,7 +58,7 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
                     sources = sources * source_ratio
 
                     est_remixture_src = torch.sum(est_sources, dim=1)
-                    remix_score_src.append(SDR(remixture, est_remixture_src))
+                    remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f))
 
                 elif ratio_on_rep_mix:
 
@@ -71,14 +71,14 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
                     est_remixture_mix = pad_x_to_y(est_remixture, remixture)
                     est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
 
-                    remix_score_src.append(SDR(remixture, est_remixture_src))
-                    remix_score_mix.append(SDR(remixture, est_remixture_mix))
+                    remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f))
+                    remix_score_mix.append(sdr_score(remixture, est_remixture_mix, f = loss_f))
 
                 else:
                     est_remixture = torch.sum(est_sources * source_ratio, dim=1)
-                    remix_score_src.append(SDR(remixture, est_remixture, cuda=False)) 
+                    remix_score_src.append(sdr_score(remixture, est_remixture, f = loss_f, cuda=False)) 
 
-                sep_score.append(SDR(sources, est_sources, cuda=False))
+                sep_score.append(sdr_score(sources, est_sources, f = loss_f, cuda=False))
 
                 if debugging:
                     break

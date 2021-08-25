@@ -1,12 +1,12 @@
 import os
 import time
 import torch
-import librosa
+# import librosa
 import argparse
 import numpy as np
 import torch.nn as nn
-import IPython.display as ipd
-from matplotlib import pyplot as plt
+# import IPython.display as ipd
+# from matplotlib import pyplot as plt
 from asteroid.models import ConvTasNet
 from datasets import MUSDB_data, Slakh_data
 from asteroid.utils.torch_utils import pad_x_to_y
@@ -38,6 +38,7 @@ parser.add_argument('--remix_ratio', nargs='+', type=float, help='Remix ratio ap
 parser.add_argument('--baseline', dest='baseline', action='store_true', help='Run baseline model or not')
 parser.add_argument('--ratio_on_rep', dest='ratio_on_rep', action='store_true', help='Apply ratio on mask or not')
 parser.add_argument('--ratio_on_rep_mix', dest='ratio_on_rep_mix', action='store_true', help='Apply ratio on mask or not')
+parser.add_argument('--loss', type=str, default='SDSDR' , help='Apply ratio on mask or not')
 
 # parser.add_argument('--batch', type=int, default=2,  help='Input length to the network');
 # parser.add_argument('--dataset', type=str, default='test', help='dataset to process')
@@ -64,7 +65,7 @@ if not args.debugging:
 
 if args.trainset == 'MUSDB':
 
-    traindata = MUSDB_data('train', args.n_src)
+    traindata = MUSDB_data('test', args.n_src)
     testdata = MUSDB_data('test', args.n_src)
     train_loader = torch.utils.data.DataLoader(traindata, batch_size = args.batch, shuffle = True, num_workers = 1)
     test_loader = torch.utils.data.DataLoader(testdata, batch_size = args.batch, shuffle = True, num_workers = 1)
@@ -179,15 +180,16 @@ for i in range(args.max_epoch):
                 
             else:
                 est_remixture = torch.sum(est_sources * source_ratio, dim=1) # shape - (bt, length)
-#             mse_loss_val = mse_loss_func(est_remixture, remixture)       
-            sdr_mix_loss = SDR(remixture, est_remixture, cuda=True)  
+#             mse_loss_val = mse_loss_func(est_remixture, remixture)  
+            sdr_mix_loss = sdr_score(remixture, est_remixture, f = args.loss, cuda=True)  
     
-        sdr_src_loss = SDR(sources, est_sources, cuda=True)
+        sdr_src_loss = sdr_score(sources, est_sources, f = args.loss, cuda=True)
+#         print(sdr_mix_loss, sdr_src_loss)
             
-        
+#         print(sdr_src_loss, sdr_mix_loss)
 #         print(pit_loss_val, mse_loss_val)
         loss_val = - args.weight_src * sdr_src_loss - args.weight_mix * sdr_mix_loss
-#         loss_epoch.append(loss_val.cpu().data.numpy())
+        loss_epoch.append(loss_val.cpu().data.numpy())
         
         optimizer.zero_grad()
         loss_val.backward()
@@ -199,8 +201,8 @@ for i in range(args.max_epoch):
 
             end_time = time.time()
 
-            result_info = 'Epoch: {} num_batches: {} time: {:.2f} sep_score: {:.2f} remix_score_src: {:.2f} \n remix_score_mix: {:.2f}\n'\
-                  .format(i, batches, end_time-start_time, sep_score, remix_score_src, remix_score_mix)
+            result_info = 'Epoch: {} num_batches: {} time: {:.2f} sep_score: {:.2f} remix_score_src: {:.2f} \n remix_score_mix: {:.2f}\n train_loss: {:.2f}\n'\
+                  .format(i, batches, end_time-start_time, sep_score, remix_score_src, remix_score_mix, np.mean(loss_epoch))
 
             save_score = sep_score if args.baseline else max(remix_score_src, remix_score_mix)
 #             save_score = sep_score if args.baseline else remix_score_src
@@ -214,7 +216,7 @@ for i in range(args.max_epoch):
             if not args.debugging:
                 file.write(result_info)
                 file.flush()  
-                
+            loss_epoch = []
         if args.debugging:
             break
 #     break

@@ -43,9 +43,9 @@ for i, track in enumerate(mus):
     all_length.append(len(sources))
 #     print(sources[0].shape)
 
-    torch.save(torch.tensor(sources),'../Data/MUSDB/'+DATASET+'/mus_' + DATASET + '_' + str(i) +'.pt')
+    torch.save(torch.tensor(sources),'../../Data/MUSDB/'+DATASET+'/mus_' + DATASET + '_' + str(i) +'.pt')
 #     break
     
 config = {'global_max':global_max, 'all_length': all_length}
 
-torch.save(config, '../Data/MUSDB/'+DATASET+'/config.pt')
+torch.save(config, '../../Data/MUSDB/'+DATASET+'/config.pt')

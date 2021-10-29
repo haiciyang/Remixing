@@ -80,8 +80,8 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
 
                 sep_score.append(sdr_score(sources, est_sources, f = loss_f, cuda=False))
 
-                if debugging:
-                    break
+#                 if debugging:
+#                     break
             
     remix_score_src = 0 if not remix_score_src else remix_score_src
     remix_score_mix = 0 if not remix_score_mix else remix_score_mix

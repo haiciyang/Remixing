@@ -1,6 +1,9 @@
 #!/bin/bash
-#!Slakh 2 + MUSDB
-for n in 0504_223710 0504_223534 0509_233827
+#!Slakh 2 + MUSDB/Slakh
+for n in 0511_233047 0511_232959 0512_143526 0513_121934 0513_122235 0513_103252
 do
-  CUDA_VISIBLE_DEVICES=3, python3 eval_on_samples.py  --model_name1 $n --n_src 5 --dataset MUSDB --ratio_on_rep1
+    for ds in MUSDB Slakh
+    do
+      CUDA_VISIBLE_DEVICES=3, python3 eval_on_samples.py  --model_name1 $n --n_src 2 --dataset $ds --with_silent --ratio_on_rep
+    done
 done

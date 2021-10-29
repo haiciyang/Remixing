@@ -16,11 +16,14 @@ MUS_EVAL_ID = MUS_PERM_ID[25:]
 
 class MUSDB_data(data.Dataset):
     
-    def __init__(self, dataset, n_src):
+    def __init__(self, dataset, n_src, with_silent):
         
         self.dataset = dataset
-        
-        config = torch.load('../Data/MUSDB/' + dataset + '/config.pt')
+        if with_silent:   
+            self.path = '../Data/MUSDB/large_'
+        else:
+            self.path = '../Data/MUSDB/'
+        config = torch.load(self.path + dataset + '/config.pt')
         self.global_max = 23.3 # max of test and train
         self.all_length = config['all_length']
 #         if dataset == 'test':
@@ -45,7 +48,7 @@ class MUSDB_data(data.Dataset):
 
         if self.dataset == 'test':
             idx = MUS_VALID_ID[idx]
-        file_path = '../Data/MUSDB/' + self.dataset + '/mus_' + self.dataset + '_' + str(idx) + '.pt'
+        file_path = self.path + self.dataset + '/mus_' + self.dataset + '_' + str(idx) + '.pt'
         sources = torch.load(file_path) # (n, srcs, L)
         N = len(sources)
         rand_id = int(torch.rand(1)*N)

@@ -52,7 +52,7 @@ def SDSDR(s,sr,  cuda = False):
         return sdsdr.cpu().data.numpy()
     
 
-def sdr_score(s, sr, f, cuda):
+def sdr_score(s, sr, f, cuda=False):
     if f == 'SDSDR':
         return SDSDR(s,sr, cuda)
     elif f == 'SDR':
@@ -92,7 +92,7 @@ def sampling_ratio(bt, n_src, ratio_on_rep, db_ratio = None):
     else:
         db_ratio = torch.tensor(db_ratio)[None, :]
         amp_ratio = db_ratio
-    source_ratio = amp_ratio[:, :, None].cuda() # shape - (None, n_src, None)
+    source_ratio = amp_ratio[:, :, None].cuda() # shape - (bt, n_src, None)
 
     mask_ratio = None
     if ratio_on_rep:
@@ -100,7 +100,7 @@ def sampling_ratio(bt, n_src, ratio_on_rep, db_ratio = None):
     
     return source_ratio, mask_ratio
 
-def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix):
+def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix, loss_f, add_scalar):
     
 #     source_ratio = remix_ratio[None, :, None].cuda() # shape - (None, n_src, None)
 #     mask_ratio = remix_ratio[None, :, None, None].cuda() # shape - (None, n_src, None, None) Normalized version
@@ -132,17 +132,19 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
                 bt = len(mixture)
 
                 mask_ratio = None
+                source_ratio = None
     #             if not baseline:
                 source_ratio, mask_ratio = sampling_ratio(bt, n_src, ratio_on_rep)
                 remixture = torch.sum(sources * source_ratio, dim=1) # shape - (bt, length)
 
                 mixture = torch.unsqueeze(mixture, dim=1)
-                est_sources, masked_tf_rep = model(mixture, mask_ratio)
+#                 if add_scalar:
+#                     mask_ratio = None
+                est_sources, masked_tf_rep = model(mixture, mask_ratio, source_ratio)
 
     #             if not baseline:
-                if ratio_on_rep:             
+                if ratio_on_rep: 
                     sources = sources * source_ratio
-
                     est_remixture_src = torch.sum(est_sources, dim=1)
 
                 elif ratio_on_rep_mix:
@@ -156,13 +158,16 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
                     est_remixture_mix = pad_x_to_y(est_remixture, remixture)
                     est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
 
-                    remix_score_mix.append(SDR(remixture, est_remixture_mix))
+#                     remix_score_mix.append(SDR(remixture, est_remixture_mix))
+                    remix_score_mix.append(sdr_score(remixture, est_remixture_mix, f = loss_f, cuda=False))
 
                 else:
                     est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
                     
-                remix_score_src.append(SDR(remixture, est_remixture_src, cuda=False)) 
-                sep_score.append(SDR(sources, est_sources, cuda=False))
+                remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f, cuda=False))
+#                 remix_score_src.append(SDR(remixture, est_remixture_src, cuda=False)) 
+#                 sep_score.append(SDR(sources, est_sources, cuda=False))
+                sep_score.append(sdr_score(sources, est_sources, f = loss_f, cuda=False))
 
                 if debugging:
                     break

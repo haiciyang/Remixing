@@ -134,4 +134,4 @@ for i, track in enumerate(glob.glob(folderPath)):
 #     break
 
 config = {'global_max':global_max, 'all_length': all_length}
-torch.save(config,'../../Data/Slakh/eval/config.pt')
+torch.save(config,'../../Data/Slakh/eval_5/config.pt')

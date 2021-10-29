@@ -28,6 +28,9 @@ n_src = 5
 for i, track in enumerate(glob.glob(folderPath)):
     
     print('Loading', i)
+    # for test set
+    if i >= 100:
+        break
 
     piano = True 
     drum = True if n_src >=2 else False
@@ -128,8 +131,9 @@ for i, track in enumerate(glob.glob(folderPath)):
         total_file += 1
     else:
         print('Empty array')
+#     if total_file
     
-#     break
+# #     break
 
 config = {'global_max':global_max, 'all_length': all_length, 'total_file': total_file}
 torch.save(config,'../../Data/Slakh/'+DATASET+'_5/config.pt')

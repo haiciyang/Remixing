@@ -33,18 +33,23 @@ parser.add_argument('--trainset', type=str, default='../Data/0305_train_sample.p
 parser.add_argument('--testset', type=str, default='../Data/0305_test_sample.pth',  help='Which testset to use')
 parser.add_argument('--train_num_subset', type=int, default=None,  help='Number of subset of the dataset')
 parser.add_argument('--test_num_subset', type=int, default=None,  help='Number of subset of the dataset')
+parser.add_argument('--with_silent', dest='with_silent', action='store_true', help='Have silent samples in the data or not')
+
 parser.add_argument('--transfer_model', type=str, default='',  help='Which model to transfer')
 parser.add_argument('--remix_ratio', nargs='+', type=float, help='Remix ratio applied to the sources')
 parser.add_argument('--baseline', dest='baseline', action='store_true', help='Run baseline model or not')
 parser.add_argument('--ratio_on_rep', dest='ratio_on_rep', action='store_true', help='Apply ratio on mask or not')
 parser.add_argument('--ratio_on_rep_mix', dest='ratio_on_rep_mix', action='store_true', help='Apply ratio on mask or not')
-parser.add_argument('--loss', type=str, default='SDSDR' , help='Apply ratio on mask or not')
+parser.add_argument('--add_scalar', dest='add_scalar', action='store_true', help='Whether or not adding scalar to the mask generator')
+parser.add_argument('--simple', dest='simple', action='store_true', help='Use simple or complex FiLM')
+parser.add_argument('--train_loss', type=str, default='SDR' , help='')
+parser.add_argument('--test_loss', type=str, default='SDR' , help='')
+
 
 # parser.add_argument('--batch', type=int, default=2,  help='Input length to the network');
 # parser.add_argument('--dataset', type=str, default='test', help='dataset to process')
 # parser.add_argument('--size', type=int, default=100, help='dataset to process')
 # parser.add_argument('--save_name', type=str, default='',  help='Save the output data');
-
 
 args = parser.parse_args()
 
@@ -65,8 +70,8 @@ if not args.debugging:
 
 if args.trainset == 'MUSDB':
 
-    traindata = MUSDB_data('test', args.n_src)
-    testdata = MUSDB_data('test', args.n_src)
+    traindata = MUSDB_data('train', args.n_src, args.with_silent)
+    testdata = MUSDB_data('test', args.n_src, args.with_silent)
     train_loader = torch.utils.data.DataLoader(traindata, batch_size = args.batch, shuffle = True, num_workers = 1)
     test_loader = torch.utils.data.DataLoader(testdata, batch_size = args.batch, shuffle = True, num_workers = 1)
 #     pass
@@ -99,7 +104,8 @@ if args.trainset == 'Slakh':
 
 
 # ===== Model Define ====
-G_model = ConvTasNet(n_src=args.n_src, sample_rate=args.sample_rate).cuda()
+G_model = ConvTasNet(n_src=args.n_src, sample_rate=args.sample_rate, add_scalar=args.add_scalar, simple=args.simple).cuda()
+
 if args.transfer_model:
     transfer_model_path = '../Model/' + args.transfer_model + '.pth'
 elif args.n_src == 2:   
@@ -146,12 +152,15 @@ for i in range(args.max_epoch):
         bt = len(mixture)
         
         mask_ratio = None
+        source_ratio = None
         if not args.baseline:
             source_ratio, mask_ratio = sampling_ratio(bt, args.n_src, args.ratio_on_rep)
             remixture = torch.sum(sources * source_ratio, dim=1) # shape - (bt, length)
             
         mixture = torch.unsqueeze(mixture, dim=1) # shape (bt, 1, length)
-        est_sources, masked_tf_rep = G_model(mixture, mask_ratio)
+#         if args.add_scalar:
+#             mask_ratio=None
+        est_sources, masked_tf_rep = G_model(mixture, mask_ratio, source_ratio)
         # est_sources - shape (bt, n_src, wav_length)
         # masked_tf_rep - shape (bt, n_src, 512, feature_length)
         
@@ -181,9 +190,11 @@ for i in range(args.max_epoch):
             else:
                 est_remixture = torch.sum(est_sources * source_ratio, dim=1) # shape - (bt, length)
 #             mse_loss_val = mse_loss_func(est_remixture, remixture)  
-            sdr_mix_loss = sdr_score(remixture, est_remixture, f = args.loss, cuda=True)  
-    
-        sdr_src_loss = sdr_score(sources, est_sources, f = args.loss, cuda=True)
+            sdr_mix_loss = sdr_score(remixture, est_remixture, f = 'SDR', cuda=True)
+
+        sdr_src_loss = sdr_score(sources, est_sources, f = args.train_loss, cuda=True)
+        
+#         print(sdr_src_loss)
 #         print(sdr_mix_loss, sdr_src_loss)
             
 #         print(sdr_src_loss, sdr_mix_loss)
@@ -195,30 +206,31 @@ for i in range(args.max_epoch):
         loss_val.backward()
         optimizer.step()
         
-        if batches % 100 == 0:
+#         if batches % 100 == 0:
             
-            sep_score, remix_score_src, remix_score_mix = test_model(G_model, test_loader, args.n_src, args.debugging, args.ratio_on_rep, args.baseline, args.ratio_on_rep_mix)
+    sep_score, remix_score_src, remix_score_mix = test_model(G_model, test_loader, args.n_src, args.debugging, args.ratio_on_rep, args.baseline, args.ratio_on_rep_mix, args.test_loss, args.add_scalar)
 
-            end_time = time.time()
+    end_time = time.time()
 
-            result_info = 'Epoch: {} num_batches: {} time: {:.2f} sep_score: {:.2f} remix_score_src: {:.2f} \n remix_score_mix: {:.2f}\n train_loss: {:.2f}\n'\
-                  .format(i, batches, end_time-start_time, sep_score, remix_score_src, remix_score_mix, np.mean(loss_epoch))
+    result_info = 'Epoch: {} num_batches: {} time: {:.2f} sep_score: {:.2f} remix_score_src: {:.2f} \n remix_score_mix: {:.2f}\n train_loss: {:.2f}\n best_score: {:.2f}\n'\
+                  .format(i, batches, end_time-start_time, sep_score, remix_score_src, remix_score_mix, np.mean(loss_epoch), best_score)
 
-            save_score = sep_score if args.baseline else max(remix_score_src, remix_score_mix)
+    save_score = sep_score if args.baseline else max(remix_score_src, remix_score_mix)
 #             save_score = sep_score if args.baseline else remix_score_src
-            if save_score > best_score:
-                if not args.debugging:
-                    torch.save(G_model.state_dict(), '../Model/'+model_label+'.pth')
-                best_score = save_score
-                result_info += 'Got best_score. Model saved \n'
+    if save_score > best_score:
+        if not args.debugging:
+            torch.save(G_model.state_dict(), '../Model/'+model_label+'.pth')
+        best_score = save_score
+        result_info += 'Got best_score. Model saved \n'
 
-            print(result_info)
-            if not args.debugging:
-                file.write(result_info)
-                file.flush()  
-            loss_epoch = []
-        if args.debugging:
-            break
+    print(result_info)
+    if not args.debugging:
+        file.write(result_info)
+        file.flush()  
+    loss_epoch = []
+    
+#         if args.debugging:
+#             break
 #     break
                 
     print('Finished Epoch')

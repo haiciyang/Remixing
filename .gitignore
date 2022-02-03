@@ -8,4 +8,6 @@ Result/
 slakh-utils
 *.pdf
 eval_results/
-
+*.ipynb
+Sample/
+eval_results/

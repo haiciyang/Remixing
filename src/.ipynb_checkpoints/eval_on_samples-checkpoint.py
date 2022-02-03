@@ -176,8 +176,8 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
 #         f = files[13]
 #         print(f)
         
-        if idx == 5:
-            break
+#         if idx == 5:
+#             break
         
         if 'config' in f:
             continue
@@ -195,17 +195,33 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
         mixture = torch.sum(sources, 1).to(torch.float).cuda() # (N, L)
 
         rec_sources = window_and_recover(sources)
-        orig_mix = torch.sum(rec_sources, 0)
+        orig_mix = torch.sum(rec_sources, 0)[None, :]
+        mix = torch.cat([orig_mix, orig_mix, orig_mix, orig_mix], 0)
+        
+#         Calculate SDR
+        rec_sources = rec_sources.cpu().data.numpy()
+        sdr, isr, sir, sar, perm = mir_eval.separation.bss_eval_images(
+            rec_sources+1e-20, mix+1e-20, compute_permutation=False)
+                
+        bss_sdr_list.append(sdr)
+        bss_sir_list.append(sir)
+        bss_sar_list.append(sar)
+        
+    return bss_sdr_list, bss_sir_list, bss_sar_list, 
         
     #  torch.save(orig_mix,'{}/{}_mixture_{}.pth'.format(path, model_name1, str(idx)))
         
         # ===== calculate performance under different remix scale ====
-
+def fake():
+    if 1==1: 
         p_list = []
         ph_list = []
         for i_ratio, input_ratio in enumerate(input_ratio_list):
 #             if i_ratio == 3:
 #                 break
+            if i_ratio != 0:
+                continue
+        
             ir = db_to_amp(torch.tensor(input_ratio))
             source_ratio, mask_ratio = sampling_ratio(1, n_src, ratio_on_rep, ir)
 
@@ -213,6 +229,8 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
             
             ratio = source_ratio[0].cpu().data # shape-(n_src, 1)
             remixture = torch.sum(rec_sources * ratio, 0)
+            
+            
             
     #   print(sdr_score(remixture[None,:], remixture[None,:], f = loss_f))
     #   print(sdr_score(orig_mix[None,:], remixture[None,:], f = loss_f))
@@ -267,7 +285,7 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
 #             torch.save(est_remixture1, '{}/{}_est_remixture_{}_{}.pth'.format(path, model_name1, str(idx), str(i_ratio)))
         
 #         ==== calculate BSS score for one time ====
-            if i_ratio > 0:
+            if i_ratio == 0:
                 rec_sources1 = rec_sources1.cpu().data.numpy()
                 rec_est_sources1 = rec_est_sources1.cpu().data.numpy()
                 sdr, isr, sir, sar, perm = mir_eval.separation.bss_eval_images(
@@ -280,7 +298,7 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
                 print(sir)
                 print(sar)
 
-        break
+#         break
             
     return sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratio_list, score_ranges_min
 
@@ -311,7 +329,9 @@ if __name__ == '__main__':
     if not os.path.isdir(path):
         os.mkdir(path)
     
-    sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratios, score_ranges_min = \
+    
+#     sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratios, score_ranges_min = \
+    bss_sdr_list, bss_sir_list, bss_sar_list = \
     eval_model(n_src = args.n_src, 
                model_name1 = args.model_name1 , 
                dataset = args.dataset, 
@@ -341,8 +361,9 @@ if __name__ == '__main__':
 #     print('score_ranges_sdsdr', np.mean(score_ranges_sdsdr, 1))
 
     
-    results = {'min_scores': np.array(score_ranges_min), 
-               'loud_scores': loud_scores,
+    results = {
+#                 'min_scores': np.array(score_ranges_min), 
+#                'loud_scores': loud_scores,
                'bss_sdr_list': bss_sdr_list, 
                'bss_sir_list': bss_sir_list, 
                'bss_sar_list': bss_sar_list,
@@ -360,5 +381,5 @@ if __name__ == '__main__':
 #     std = round(np.std(loud_scores), 2)
 #     print('loud_scores', mean, std)
     
-#     torch.save(results, path+'/results.pt')
+    torch.save(results, path+'/inputsdr_results.pt')
     

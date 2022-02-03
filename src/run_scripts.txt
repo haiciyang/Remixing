@@ -11,7 +11,7 @@ CUDA_VISIBLE_DEVICES=0, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_
 
 --transfer_model 0308_104450
 
-CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 5 --weight_src 1 --weight_mix 5 --trainset MUSDB --ratio_on_rep --debugging
+CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --weight_src 1 --weight_mix 5 --trainset MUSDB --ratio_on_rep --debugging
 
 CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 2 --weight_src 1 --weight_mix 5 --trainset 0411_mus_train_4src --train_num_subset 1 --testset 0411_mus_test_4src --test_num_subset 1 --baseline
 
@@ -29,7 +29,7 @@ CUDA_VISIBLE_DEVICES=1, python3 eval_on_samples.py  --model_name1 0428_163148 --
 CUDA_VISIBLE_DEVICES=3, python3 eval_on_samples.py  --model_name1 0826_123024 --n_src 4 --dataset MUSDB --loss_f SDSDR 
 
 
-CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 4 --batch 3 --weight_src 1 --weight_mix 1 --trainset MUSDB --transfer_model 0505_120648 --loss SDSDR --debugging=True
+CUDA_VISIBLE_DEVICES=3, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 4 --batch 3 --weight_src 1 --weight_mix 1 --trainset MUSDB --transfer_model 0505_120648 --loss SDSDR --debugging
 
 
 

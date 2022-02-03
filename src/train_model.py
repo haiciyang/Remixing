@@ -7,10 +7,10 @@ import numpy as np
 import torch.nn as nn
 # import IPython.display as ipd
 # from matplotlib import pyplot as plt
-from asteroid.models import ConvTasNet
+from asteroid_1.models import ConvTasNet
 from datasets import MUSDB_data, Slakh_data
-from asteroid.utils.torch_utils import pad_x_to_y
-from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
+from asteroid_1.utils.torch_utils import pad_x_to_y
+from asteroid_1.losses import PITLossWrapper, pairwise_neg_sisdr
 
 from utils import *
 

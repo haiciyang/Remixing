@@ -12,3 +12,6 @@ eval_results/
 Sample/
 eval_results/
 .gitignore
+src/samples/
+src/*.ipynb
+unpublished/

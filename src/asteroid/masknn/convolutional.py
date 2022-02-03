@@ -44,7 +44,7 @@ class Conv1DBlock(nn.Module):
     """
 
     def __init__(
-        self, in_chan, hid_chan, skip_out_chan, kernel_size, padding, dilation, norm_type="gLN"
+        self, in_chan, out_chan, hid_chan, skip_out_chan, kernel_size, padding, dilation, norm_type="gLN"
     ):
         super(Conv1DBlock, self).__init__()
         self.skip_out_chan = skip_out_chan
@@ -61,7 +61,7 @@ class Conv1DBlock(nn.Module):
             nn.PReLU(),
             conv_norm(hid_chan),
         )
-        self.res_conv = nn.Conv1d(hid_chan, in_chan, 1)
+        self.res_conv = nn.Conv1d(hid_chan, out_chan, 1)
         if skip_out_chan:
             self.skip_conv = nn.Conv1d(hid_chan, skip_out_chan, 1)
 
@@ -117,6 +117,8 @@ class TDConvNet(nn.Module):
         conv_kernel_size=3,
         norm_type="gLN",
         mask_act="relu",
+        add_scalar=False,
+        simple=False,
     ):
         super(TDConvNet, self).__init__()
         self.in_chan = in_chan
@@ -131,18 +133,31 @@ class TDConvNet(nn.Module):
         self.conv_kernel_size = conv_kernel_size
         self.norm_type = norm_type
         self.mask_act = mask_act
+        self.add_scalar = add_scalar # True or False
+        self.simple = simple
+        
+        # simple or complex
+        n_param = bn_chan*2 if simple else bn_chan*self.n_blocks*self.n_repeats*2
+        if self.add_scalar:
+            self.film_generator = nn.Linear(self.n_src, n_param)
 
         layer_norm = norms.get(norm_type)(in_chan)
         bottleneck_conv = nn.Conv1d(in_chan, bn_chan, 1)
         self.bottleneck = nn.Sequential(layer_norm, bottleneck_conv)
         # Succession of Conv1DBlock with exponentially increasing dilation.
         self.TCN = nn.ModuleList()
+        self.chan_list = []
         for r in range(n_repeats):
             for x in range(n_blocks):
+                in_bn_chan = bn_chan
+                out_bn_chan = bn_chan
+#                 if add_scalar:
+#                     in_bn_chan = bn_chan + self.n_src
                 padding = (conv_kernel_size - 1) * 2 ** x // 2
                 self.TCN.append(
                     Conv1DBlock(
-                        bn_chan,
+                        in_bn_chan,
+                        out_bn_chan,
                         hid_chan,
                         skip_chan,
                         conv_kernel_size,
@@ -151,18 +166,19 @@ class TDConvNet(nn.Module):
                         norm_type=norm_type,
                     )
                 )
+                self.chan_list.append(in_bn_chan)
         mask_conv_inp = skip_chan if skip_chan else bn_chan
         mask_conv = nn.Conv1d(mask_conv_inp, n_src * out_chan, 1)
         self.mask_net = nn.Sequential(nn.PReLU(), mask_conv)
         # Get activation function.
-        mask_nl_class = activations.get(mask_act)
+        mask_nl_class = activations.get(mask_act) # Get the activation function
         # For softmax, feed the source dimension.
-        if has_arg(mask_nl_class, "dim"):
+        if has_arg(mask_nl_class, "dim"): # 
             self.output_act = mask_nl_class(dim=1)
         else:
             self.output_act = mask_nl_class()
 
-    def forward(self, mixture_w):
+    def forward(self, mixture_w, scalars):
         r"""Forward.
 
         Args:
@@ -174,20 +190,48 @@ class TDConvNet(nn.Module):
         batch, _, n_frames = mixture_w.size()
         output = self.bottleneck(mixture_w)
         skip_connection = torch.tensor([0.0], device=output.device)
-        for layer in self.TCN:
+        
+        # Parameters of FiLM
+        scalars = scalars.view(-1, self.n_src) # (bt, self.n_src)
+        
+        if self.add_scalar:
+            if self.simple:
+                film_list = self.film_generator(scalars).view(-1, 2, self.bn_chan) # (bt,)
+                gamma = film_list[:,0,:].view(-1, self.bn_chan, 1) # (bt, self.bn_chan)
+                beta = film_list[:,1,:].view(-1, self.bn_chan, 1)
+            else:
+                film_list = self.film_generator(scalars).view(-1, 2, self.n_blocks*self.n_repeats, self.bn_chan) # 
+#         for inbn_chan, layer in zip(self.chan_list, self.TCN):
+        for idx, layer in enumerate(self.TCN):
             # Common to w. skip and w.o skip architectures
+            # Concat the scalar to the input
+#             input_cat = output
+#             if inbn_chan != self.bn_chan:
+#                 scalars = scalars.expand(batch, self.n_src, n_frames)
+#                 input_cat = torch.cat((scalars, output),1)
+# #             print(input_cat)
+            if self.add_scalar and not self.simple:
+                gamma = film_list[:,0,idx,:].view(-1, self.bn_chan, 1) # (bt, self.bn_chan)
+                beta = film_list[:,1,idx,:].view(-1, self.bn_chan, 1)
             tcn_out = layer(output)
             if self.skip_chan:
                 residual, skip = tcn_out
                 skip_connection = skip_connection + skip
             else:
                 residual = tcn_out
+             # FiLM layer
+            
+            if self.add_scalar:
+                residual = gamma * residual + beta
             output = output + residual
+#             print(output.shape)
+            
         # Use residual output when no skip connection
         mask_inp = skip_connection if self.skip_chan else output
         score = self.mask_net(mask_inp)
         score = score.view(batch, self.n_src, self.out_chan, n_frames)
         est_mask = self.output_act(score)
+        
         return est_mask
 
     def get_config(self):

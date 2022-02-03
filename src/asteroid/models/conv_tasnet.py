@@ -62,7 +62,10 @@ class ConvTasNet(BaseEncoderMaskerDecoder):
         stride=8,
         encoder_activation=None,
         sample_rate=8000,
+        add_scalar=False,
+        simple=False,
         **fb_kwargs,
+
     ):
         encoder, decoder = make_enc_dec(
             fb_name,
@@ -72,6 +75,8 @@ class ConvTasNet(BaseEncoderMaskerDecoder):
             sample_rate=sample_rate,
             **fb_kwargs,
         )
+        
+#         print(encoder)
         n_feats = encoder.n_feats_out
         if in_chan is not None:
             assert in_chan == n_feats, (
@@ -93,6 +98,8 @@ class ConvTasNet(BaseEncoderMaskerDecoder):
             conv_kernel_size=conv_kernel_size,
             norm_type=norm_type,
             mask_act=mask_act,
+            add_scalar=add_scalar,
+            simple=simple,        
         )
-        print('using this')
-        super().__init__(encoder, masker, decoder, encoder_activation=encoder_activation)
+        super().__init__(encoder, masker, decoder, add_scalar, n_src, encoder_activation=encoder_activation)
+#         self.decoder_mix = decoder

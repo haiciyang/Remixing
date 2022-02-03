@@ -5,7 +5,7 @@ Result/
 *.wav
 *.pth
 *.p
-slakh-utils
+slakh-utils/
 *.pdf
 eval_results/
 *.ipynb

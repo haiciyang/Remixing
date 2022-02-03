@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 import warnings
 from typing import Optional
 
@@ -213,15 +214,24 @@ class BaseEncoderMaskerDecoder(BaseModel):
             See ``asteroid.masknn.activations`` for valid values.
     """
 
-    def __init__(self, encoder, masker, decoder, encoder_activation=None):
+    def __init__(self, encoder, masker, decoder, add_scalar, n_src, encoder_activation=None):
         super().__init__(sample_rate=getattr(encoder, "sample_rate", None))
         self.encoder = encoder
         self.masker = masker
         self.decoder = decoder
         self.encoder_activation = encoder_activation
         self.enc_activation = activations.get(encoder_activation or "linear")()
+        self.add_scalar = add_scalar
+        self.n_src = n_src
+        
+#         if add_scalar:
+#             self.mask_film = nn.Sequential(
+#                 nn.Linear(n_src, n_src),
+#                 nn.ReLU()
+#             )
+#         self.decoder_mixture = 
 
-    def forward(self, wav):
+    def forward(self, wav, mask_ratio=None, scalars=None):
         """Enc/Mask/Dec model forward
 
         Args:
@@ -237,9 +247,11 @@ class BaseEncoderMaskerDecoder(BaseModel):
 
         # Real forward
         tf_rep = self.forward_encoder(wav)
-        est_masks = self.forward_masker(tf_rep)
+        est_masks = self.forward_masker(tf_rep, scalars)
         masked_tf_rep = self.apply_masks(tf_rep, est_masks)
-        decoded = self.forward_decoder(masked_tf_rep)
+        if not isinstance(mask_ratio, type(None)):
+            masked_tf_rep = masked_tf_rep * mask_ratio
+        decoded = self.forward_decoder(masked_tf_rep, scalars)
 
         reconstructed = pad_x_to_y(decoded, wav)
         return _shape_reconstructed(reconstructed, shape), masked_tf_rep
@@ -256,7 +268,7 @@ class BaseEncoderMaskerDecoder(BaseModel):
         tf_rep = self.encoder(wav)
         return self.enc_activation(tf_rep)
 
-    def forward_masker(self, tf_rep: torch.Tensor) -> torch.Tensor:
+    def forward_masker(self, tf_rep: torch.Tensor, scalars) -> torch.Tensor:
         """Estimates masks from time-frequency representation.
 
         Args:
@@ -266,7 +278,7 @@ class BaseEncoderMaskerDecoder(BaseModel):
         Returns:
             torch.Tensor: Estimated masks
         """
-        return self.masker(tf_rep)
+        return self.masker(tf_rep, scalars)
 
     def apply_masks(self, tf_rep: torch.Tensor, est_masks: torch.Tensor) -> torch.Tensor:
         """Applies masks to time-frequency representation.
@@ -281,7 +293,7 @@ class BaseEncoderMaskerDecoder(BaseModel):
         """
         return est_masks * tf_rep.unsqueeze(1)
 
-    def forward_decoder(self, masked_tf_rep: torch.Tensor) -> torch.Tensor:
+    def forward_decoder(self, masked_tf_rep: torch.Tensor, scalars) -> torch.Tensor:
         """Reconstructs time-domain waveforms from masked representations.
 
         Args:
@@ -290,7 +302,8 @@ class BaseEncoderMaskerDecoder(BaseModel):
         Returns:
             torch.Tensor: Time-domain waveforms.
         """
-        return self.decoder(masked_tf_rep)
+        scalars = None
+        return self.decoder(masked_tf_rep, None, scalars)
 
     def get_model_args(self):
         """ Arguments needed to re-instantiate the model. """

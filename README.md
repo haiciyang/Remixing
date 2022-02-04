@@ -51,8 +51,3 @@ Scenario 1:  we are training the following models, on MUSDB with 4 sources, and 
 #### Model Evaluation
 To get the remix output of specific one track
 <code>python3 eval_on_samples.py  --model_name 0826_123024 --n_src 4 --dataset MUSDB --loss_f SDSDR<code>
-
-
-
-
-

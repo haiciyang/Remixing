@@ -10,7 +10,7 @@ import torch.nn as nn
 from asteroid_1.models import ConvTasNet
 from datasets import MUSDB_data, Slakh_data
 from asteroid_1.utils.torch_utils import pad_x_to_y
-from asteroid_1.losses import PITLossWrapper, pairwise_neg_sisdr
+from asteroid_1m.losses import PITLossWrapper, pairwise_neg_sisdr
 
 from utils import *
 
@@ -34,16 +34,11 @@ parser.add_argument('--testset', type=str, default='../Data/0305_test_sample.pth
 parser.add_argument('--train_num_subset', type=int, default=None,  help='Number of subset of the dataset')
 parser.add_argument('--test_num_subset', type=int, default=None,  help='Number of subset of the dataset')
 parser.add_argument('--with_silent', dest='with_silent', action='store_true', help='Have silent samples in the data or not')
-
 parser.add_argument('--transfer_model', type=str, default='',  help='Which model to transfer')
 parser.add_argument('--remix_ratio', nargs='+', type=float, help='Remix ratio applied to the sources')
 parser.add_argument('--baseline', dest='baseline', action='store_true', help='Run baseline model or not')
 parser.add_argument('--ratio_on_rep', dest='ratio_on_rep', action='store_true', help='Apply ratio on mask or not')
-parser.add_argument('--ratio_on_rep_mix', dest='ratio_on_rep_mix', action='store_true', help='Apply ratio on mask or not')
-parser.add_argument('--add_scalar', dest='add_scalar', action='store_true', help='Whether or not adding scalar to the mask generator')
-parser.add_argument('--simple', dest='simple', action='store_true', help='Use simple or complex FiLM')
 parser.add_argument('--train_loss', type=str, default='SDR' , help='')
-parser.add_argument('--test_loss', type=str, default='SDR' , help='')
 
 
 # parser.add_argument('--batch', type=int, default=2,  help='Input length to the network');

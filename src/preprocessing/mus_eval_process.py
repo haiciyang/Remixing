@@ -23,7 +23,6 @@ for i, track in enumerate(mus):
     if i not in MUS_EVAL_ID:
         continue
     print(i)
-    
     sources= []
     
     stems = track.stems #(5, L, 2)

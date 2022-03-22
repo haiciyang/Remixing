@@ -2,14 +2,17 @@ import musdb
 import torch
 import numpy as np
 
-DATASET = 'train'
+DATASET = 'test'
 SEC_P_SEG = 1
 SR = 44100
-mus = musdb.DB(root='/media/sdc1/Data/musdb18', subsets=DATASET)
+# mus = musdb.DB(root='/media/sdc1/Data/musdb18', subsets=DATASET)
+mus = musdb.DB(root='/media/sdb1/Data/musdb18_32khz', subsets=DATASET)
 
 global_max = 0
 
 all_length = []
+
+print(len(mus))
 
 for i, track in enumerate(mus):
 
@@ -18,6 +21,7 @@ for i, track in enumerate(mus):
     stems = track.stems #(5, L, 2)
     stems = np.mean(stems, -1) 
     print(i, track.name)
+    fake()
     # (5, L) mixture, drums, bass, the rest, vocal
     length = stems.shape[-1]
     instru_wav = stems[[-1, 1, 2, 3]]
@@ -46,6 +50,6 @@ for i, track in enumerate(mus):
     torch.save(torch.tensor(sources),'../../Data/MUSDB/'+DATASET+'/mus_' + DATASET + '_' + str(i) +'.pt')
 #     break
     
-config = {'global_max':global_max, 'all_length': all_length}
+# config = {'global_max':global_max, 'all_length': all_length}
 
-torch.save(config, '../../Data/MUSDB/'+DATASET+'/config.pt')
+# torch.save(config, '../../Data/MUSDB/'+DATASET+'/config.pt')

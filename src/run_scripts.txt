@@ -15,7 +15,7 @@ CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_
 
 CUDA_VISIBLE_DEVICES=1, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 2 --weight_src 1 --weight_mix 5 --trainset 0411_mus_train_4src --train_num_subset 1 --testset 0411_mus_test_4src --test_num_subset 1 --baseline
 
-CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 1 --weight_src 1 --weight_mix 5 --trainset Slakh--baseline --debugging
+CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 200 --lr 0.0001  --n_src 4 --batch 1 --weight_src 1 --weight_mix 5 --trainset Slakh --baseline --debugging
 
 CUDA_VISIBLE_DEVICES=2, python3 train_model.py --max_epoch 5000 --lr 0.0001  --n_src 4 --batch 3 --weight_src 1 --weight_mix 4 --trainset MUSDB 
 --debugging --ratio_on_rep --transfer_model 0425_172718

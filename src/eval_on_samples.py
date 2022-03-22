@@ -5,9 +5,10 @@ import torch
 # import librosa
 import argparse
 import mir_eval
+import museval
 import numpy as np
 import soundfile as sf
-from utils import *
+import utils
 from tqdm import tqdm
 from torch.utils import data
 import IPython.display as ipd
@@ -113,14 +114,14 @@ def cal_loudness_score(stems, mix, mix_h):
     return output, p, p_h
 
 
-def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ratio=None, ratio_on_rep = False, model_name2 = '', ratio_on_rep2 = False, path=None, adjust=None, loss_f='SDSDR', with_silent=True):
+def eval_model(n_src = 2, model_name = '0308_104450' , dataset = None, input_ratio=None, ratio_on_rep = False, model_name2 = '', ratio_on_rep2 = False, path=None, adjust=None, loss_f='SDSDR', with_silent=True):
     
     assert not ratio_on_rep2
     
     #### Load model ####
 
     G_model = ConvTasNet(n_src=n_src, add_scalar=args.add_scalar, simple=args.simple).cuda()
-    G_model.load_state_dict(torch.load('../Model/'+model_name1+'.pth'))
+    G_model.load_state_dict(torch.load('../Model/'+model_name+'.pth'))
     G_model.eval()  
     
     ### Get data and start evaluation for each song ####
@@ -132,6 +133,8 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
     bss_sdr_list = []
     bss_sir_list = []
     bss_sar_list = []
+    input_sdr_list = []
+    sdr_list = []
     ratio_list = []
     
     if with_silent and dataset=='MUSDB':
@@ -176,8 +179,8 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
 #         f = files[13]
 #         print(f)
         
-#         if idx == 5:
-#             break
+        if idx == 50:
+            break
         
         if 'config' in f:
             continue
@@ -199,21 +202,17 @@ def eval_model(n_src = 2, model_name1 = '0308_104450' , dataset = None, input_ra
         mix = torch.cat([orig_mix, orig_mix, orig_mix, orig_mix], 0)
         
 #         Calculate SDR
-        rec_sources = rec_sources.cpu().data.numpy()
-        sdr, isr, sir, sar, perm = mir_eval.separation.bss_eval_images(
-            rec_sources+1e-20, mix+1e-20, compute_permutation=False)
-                
-        bss_sdr_list.append(sdr)
-        bss_sir_list.append(sir)
-        bss_sar_list.append(sar)
+#         rec_sources = rec_sources.cpu().data.numpy()
+        input_sdr = [utils.SDR(rec_sources[i, :], mix[i, :]) for i in range(n_src)] #
+        input_sdr_list.append(input_sdr)
         
-    return bss_sdr_list, bss_sir_list, bss_sar_list, 
+#     return bss_sdr_list, bss_sir_list, bss_sar_list, 
         
-    #  torch.save(orig_mix,'{}/{}_mixture_{}.pth'.format(path, model_name1, str(idx)))
+#     #  torch.save(orig_mix,'{}/{}_mixture_{}.pth'.format(path, model_name1, str(idx)))
         
-        # ===== calculate performance under different remix scale ====
-def fake():
-    if 1==1: 
+#         # ===== calculate performance under different remix scale ====
+# def fake():
+#     if 1==1: 
         p_list = []
         ph_list = []
         for i_ratio, input_ratio in enumerate(input_ratio_list):
@@ -248,8 +247,8 @@ def fake():
                 est_remixture1 = torch.sum(rec_est_sources1 * ratio, 0)
                 rec_sources1 = rec_sources
             
-            mix_sdr = sdr_score(remixture[None,:], est_remixture1[None,:], f = 'SDR')
-            mix_sdsdr = sdr_score(remixture[None,:], est_remixture1[None,:], f = 'SDSDR')
+            mix_sdr = utils.sdr_score(remixture[None,:], est_remixture1[None,:], f = 'SDR')
+            mix_sdsdr = utils.sdr_score(remixture[None,:], est_remixture1[None,:], f = 'SDSDR')
             mix_min = min(mix_sdr, mix_sdsdr)
             
             loud_p, p, p_h = cal_loudness_score(rec_sources, remixture, est_remixture1)
@@ -286,27 +285,37 @@ def fake():
         
 #         ==== calculate BSS score for one time ====
             if i_ratio == 0:
-                rec_sources1 = rec_sources1.cpu().data.numpy()
-                rec_est_sources1 = rec_est_sources1.cpu().data.numpy()
-                sdr, isr, sir, sar, perm = mir_eval.separation.bss_eval_images(
-                    rec_sources1+1e-20,rec_est_sources1+1e-20, compute_permutation=False)
+                rec_sdr = [utils.SDR(rec_sources1[i, :], rec_est_sources1[i, :]) for i in range(n_src)]
+#                 print(rec_sdr)
+                sdr_list.append(np.array(rec_sdr))
+#                 rec_sources1 = rec_sources1.cpu().data.numpy()
+#                 rec_est_sources1 = rec_est_sources1.cpu().data.numpy()
+#                 (msdr, misr, msir, msar, mperm) = museval.metrics.bss_eval(
+#                    rec_sources1,
+#                    rec_est_sources1)
+#                 sdr, isr, sir, sar, perm = mir_eval.separation.bss_eval_images(
+#                     rec_sources1+1e-20,rec_est_sources1+1e-20, compute_permutation=False)
                 
-                bss_sdr_list.append(sdr)
-                bss_sir_list.append(sir)
-                bss_sar_list.append(sar)
-                print(sdr)
-                print(sir)
-                print(sar)
+#                 bss_sdr_list.append(sdr)
+#                 bss_sir_list.append(sir)
+#                 bss_sar_list.append(sar)
+#                 print(sdr)
+#                 print(sir)
+#                 print(sar)
+
+                
+#                 print(np.array(sdr_list) - np.array(input_sdr))
+                
 
 #         break
             
-    return sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratio_list, score_ranges_min
+    return sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratio_list, score_ranges_min, sdr_list, input_sdr_list
 
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description='Testing model')
 
-    parser.add_argument('--model_name1', type=str, default='',  help='model_name');
+    parser.add_argument('--model_name', type=str, default='',  help='model_name');
     parser.add_argument('--model_name2', type=str, default='',  help='Dataset');
     parser.add_argument('--dataset', type=str, default='',  help='Dataset');
     parser.add_argument('--with_silent', dest='with_silent', action='store_true', help='whether use silent segment for training')
@@ -322,7 +331,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     time_label = time.strftime("%m%d")
-    path = '../eval_results/'+args.model_name1+'_'+args.dataset +'_'+ time_label
+    path = '../eval_results/'+args.model_name+'_'+args.dataset +'_'+ time_label
     if not isinstance(args.adjust, type(None)):
         path += '_' + str(args.adjust)
     
@@ -330,10 +339,10 @@ if __name__ == '__main__':
         os.mkdir(path)
     
     
-#     sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratios, score_ranges_min = \
-    bss_sdr_list, bss_sir_list, bss_sar_list = \
+#     bss_sdr_list, bss_sir_list, bss_sar_list = \
+    sdr_scores, loud_scores, bss_sdr_list, bss_sir_list, bss_sar_list, ratios, score_ranges_min, sdr_list, input_sdr_list = \
     eval_model(n_src = args.n_src, 
-               model_name1 = args.model_name1 , 
+               model_name = args.model_name , 
                dataset = args.dataset, 
                input_ratio=None, 
                ratio_on_rep = args.ratio_on_rep, 
@@ -364,9 +373,12 @@ if __name__ == '__main__':
     results = {
 #                 'min_scores': np.array(score_ranges_min), 
 #                'loud_scores': loud_scores,
-               'bss_sdr_list': bss_sdr_list, 
-               'bss_sir_list': bss_sir_list, 
-               'bss_sar_list': bss_sar_list,
+#                'bss_sdr_list': bss_sdr_list, 
+#                'bss_sir_list': bss_sir_list, 
+#                'bss_sar_list': bss_sar_list,
+#                 'dt_sdr_list': dt_sdr_list
+                 'sdr_list': sdr_list,
+                 'input_sdr_list': input_sdr_list
               }
     
 #     torch.save(results, 'samples/{}_min_scores_{}_images.npy'.format(args.model_name1, args.dataset))
@@ -381,5 +393,5 @@ if __name__ == '__main__':
 #     std = round(np.std(loud_scores), 2)
 #     print('loud_scores', mean, std)
     
-    torch.save(results, path+'/inputsdr_results.pt')
+    torch.save(results, path+'/dtsdr_results.pt')
     

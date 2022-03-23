@@ -100,79 +100,79 @@ def sampling_ratio(bt, n_src, ratio_on_rep, db_ratio = None):
     
     return source_ratio, mask_ratio
 
-def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix, loss_f, add_scalar):
+# def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix, loss_f, add_scalar):
     
-#     source_ratio = remix_ratio[None, :, None].cuda() # shape - (None, n_src, None)
-#     mask_ratio = remix_ratio[None, :, None, None].cuda() # shape - (None, n_src, None, None) Normalized version
-    MAX_APM = 3.162
-    FLUC_RANGE = MAX_APM - 1/MAX_APM
+# #     source_ratio = remix_ratio[None, :, None].cuda() # shape - (None, n_src, None)
+# #     mask_ratio = remix_ratio[None, :, None, None].cuda() # shape - (None, n_src, None, None) Normalized version
+#     MAX_APM = 3.162
+#     FLUC_RANGE = MAX_APM - 1/MAX_APM
 
-    model.eval()
-    sep_score = []
-    remix_score_mix = []
-    remix_score_src = []
-#     print(kwargs)
+#     model.eval()
+#     sep_score = []
+#     remix_score_mix = []
+#     remix_score_src = []
+# #     print(kwargs)
 
-    with torch.no_grad():
+#     with torch.no_grad():
         
-        epoch = 3
+#         epoch = 3
         
-        for ep in range(epoch):
+#         for ep in range(epoch):
         
-            for data in data_loader:
+#             for data in data_loader:
 
-                if not isinstance(data, torch.Tensor):
-                    sources = data[1].to(torch.float32).cuda()
-                    mixture = data[0].to(torch.float32).cuda()
-                else:
-    #                 print(data.shape)
-                    sources = data.to(torch.float32).cuda()
-                    mixture = torch.sum(sources, 1)
+#                 if not isinstance(data, torch.Tensor):
+#                     sources = data[1].to(torch.float32).cuda()
+#                     mixture = data[0].to(torch.float32).cuda()
+#                 else:
+#     #                 print(data.shape)
+#                     sources = data.to(torch.float32).cuda()
+#                     mixture = torch.sum(sources, 1)
 
-                bt = len(mixture)
+#                 bt = len(mixture)
 
-                mask_ratio = None
-                source_ratio = None
-    #             if not baseline:
-                source_ratio, mask_ratio = sampling_ratio(bt, n_src, ratio_on_rep)
-                remixture = torch.sum(sources * source_ratio, dim=1) # shape - (bt, length)
+#                 mask_ratio = None
+#                 source_ratio = None
+#     #             if not baseline:
+#                 source_ratio, mask_ratio = sampling_ratio(bt, n_src, ratio_on_rep)
+#                 remixture = torch.sum(sources * source_ratio, dim=1) # shape - (bt, length)
 
-                mixture = torch.unsqueeze(mixture, dim=1)
-#                 if add_scalar:
-#                     mask_ratio = None
-                est_sources, masked_tf_rep = model(mixture, mask_ratio, source_ratio)
+#                 mixture = torch.unsqueeze(mixture, dim=1)
+# #                 if add_scalar:
+# #                     mask_ratio = None
+#                 est_sources, masked_tf_rep = model(mixture, mask_ratio, source_ratio)
 
-    #             if not baseline:
-                if ratio_on_rep: 
-                    sources = sources * source_ratio
-                    est_remixture_src = torch.sum(est_sources, dim=1)
+#     #             if not baseline:
+#                 if ratio_on_rep: 
+#                     sources = sources * source_ratio
+#                     est_remixture_src = torch.sum(est_sources, dim=1)
 
-                elif ratio_on_rep_mix:
+#                 elif ratio_on_rep_mix:
 
-                    _, mask_ratio = sampling_ratio(bt, n_src, True) # generate mask_ratio
-                    masked_mixture = torch.unsqueeze(
-                        torch.sum(masked_tf_rep * mask_ratio, dim=1), dim=1
-                    )
+#                     _, mask_ratio = sampling_ratio(bt, n_src, True) # generate mask_ratio
+#                     masked_mixture = torch.unsqueeze(
+#                         torch.sum(masked_tf_rep * mask_ratio, dim=1), dim=1
+#                     )
 
-                    est_remixture = model.forward_decoder(masked_mixture)
-                    est_remixture_mix = pad_x_to_y(est_remixture, remixture)
-                    est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
+#                     est_remixture = model.forward_decoder(masked_mixture)
+#                     est_remixture_mix = pad_x_to_y(est_remixture, remixture)
+#                     est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
 
-#                     remix_score_mix.append(SDR(remixture, est_remixture_mix))
-                    remix_score_mix.append(sdr_score(remixture, est_remixture_mix, f = loss_f, cuda=False))
+# #                     remix_score_mix.append(SDR(remixture, est_remixture_mix))
+#                     remix_score_mix.append(sdr_score(remixture, est_remixture_mix, f = loss_f, cuda=False))
 
-                else:
-                    est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
+#                 else:
+#                     est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
                     
-                remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f, cuda=False))
-#                 remix_score_src.append(SDR(remixture, est_remixture_src, cuda=False)) 
-#                 sep_score.append(SDR(sources, est_sources, cuda=False))
-                sep_score.append(sdr_score(sources, est_sources, f = loss_f, cuda=False))
+#                 remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f, cuda=False))
+# #                 remix_score_src.append(SDR(remixture, est_remixture_src, cuda=False)) 
+# #                 sep_score.append(SDR(sources, est_sources, cuda=False))
+#                 sep_score.append(sdr_score(sources, est_sources, f = loss_f, cuda=False))
 
-                if debugging:
-                    break
+#                 if debugging:
+#                     break
             
-    remix_score_src = 0 if not remix_score_src else remix_score_src
-    remix_score_mix = 0 if not remix_score_mix else remix_score_mix
+#     remix_score_src = 0 if not remix_score_src else remix_score_src
+#     remix_score_mix = 0 if not remix_score_mix else remix_score_mix
     
-    return np.mean(sep_score), np.mean(remix_score_src), np.mean(remix_score_mix)
+#     return np.mean(sep_score), np.mean(remix_score_src), np.mean(remix_score_mix)

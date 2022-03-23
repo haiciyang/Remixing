@@ -62,8 +62,6 @@ class ConvTasNet(BaseEncoderMaskerDecoder):
         stride=8,
         encoder_activation=None,
         sample_rate=8000,
-        add_scalar=False,
-        simple=False,
         **fb_kwargs,
 
     ):
@@ -97,9 +95,7 @@ class ConvTasNet(BaseEncoderMaskerDecoder):
             skip_chan=skip_chan,
             conv_kernel_size=conv_kernel_size,
             norm_type=norm_type,
-            mask_act=mask_act,
-            add_scalar=add_scalar,
-            simple=simple,        
+            mask_act=mask_act,        
         )
-        super().__init__(encoder, masker, decoder, add_scalar, n_src, encoder_activation=encoder_activation)
+        super().__init__(encoder, masker, decoder, n_src, encoder_activation=encoder_activation)
 #         self.decoder_mix = decoder

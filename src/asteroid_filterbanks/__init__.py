@@ -56,11 +56,9 @@ def make_enc_dec(
         enc = Encoder(fb, padding=padding)
         # Decoder filterbank is pseudo inverse of encoder filterbank.
         dec = Decoder.pinv_of(fb)
-#         dec_mix = Decoder.pinv_of(fb)
     elif who_is_pinv in ["enc", "encoder"]:
         fb = fb_class(n_filters, kernel_size, stride=stride, sample_rate=sample_rate, **kwargs)
         dec = Decoder(fb, padding=padding, output_padding=output_padding)
-#         dec_mix = Decoder(fb, padding=padding, output_padding=output_padding)
         # Encoder filterbank is pseudo inverse of decoder filterbank.
         enc = Encoder.pinv_of(fb)
     else:

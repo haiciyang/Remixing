@@ -47,8 +47,10 @@ class MUSDB_data(data.Dataset):
     def __getitem__(self, idx):
 
         if self.dataset == 'test':
-            idx = MUS_VALID_ID[idx]
-        file_path = self.path + self.dataset + '/mus_' + self.dataset + '_' + str(idx) + '.pt'
+            idx = MUS_EVAL_ID[idx]
+            file_path = self.path + self.dataset + '/mus_' + str(idx) + '.pt'
+        else:
+            file_path = self.path + self.dataset + '/mus_' + self.dataset + '_' + str(idx) + '.pt'
         sources = torch.load(file_path) # (n, srcs, L)
         N = len(sources)
         rand_id = int(torch.rand(1)*N)

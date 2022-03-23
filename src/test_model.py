@@ -4,17 +4,14 @@ import librosa
 import mir_eval
 import argparse
 import numpy as np
-from utils import *
 from tqdm import tqdm
-import IPython.display as ipd
-from matplotlib import pyplot as plt
+
+import utils
 from asteroid.models import ConvTasNet
-from generate_MUSdata import MUSDB_data
-from generate_SlakhData import Slakh_data
 from asteroid.utils.torch_utils import pad_x_to_y
 from asteroid.losses import PITLossWrapper, pairwise_neg_sisdr
 
-def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, ratio_on_rep_mix, loss):
+def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, loss):
     
 #     source_ratio = remix_ratio[None, :, None].cuda() # shape - (None, n_src, None)
 #     mask_ratio = remix_ratio[None, :, None, None].cuda() # shape - (None, n_src, None, None) Normalized version
@@ -23,8 +20,7 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
 
     model.eval()
     sep_score = []
-    remix_score_mix = []
-    remix_score_src = []
+    remix_score = []
 #     print(kwargs)
 
     with torch.no_grad():
@@ -46,47 +42,28 @@ def test_model(model, data_loader, n_src, debugging, ratio_on_rep, baseline, rat
                 bt = len(mixture)
 
                 mask_ratio = None
-    #             if not baseline:
-                source_ratio, mask_ratio = sampling_ratio(bt, n_src, ratio_on_rep)
+                source_ratio, mask_ratio = utils.sampling_ratio(bt, n_src, ratio_on_rep)
                 remixture = torch.sum(sources * source_ratio, dim=1) # shape - (bt, length)
 
                 mixture = torch.unsqueeze(mixture, dim=1)
                 est_sources, masked_tf_rep = model(mixture, mask_ratio)
 
-    #             if not baseline:
                 if ratio_on_rep:             
                     sources = sources * source_ratio
-
-                    est_remixture_src = torch.sum(est_sources, dim=1)
-                    remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f))
-
-                elif ratio_on_rep_mix:
-
-                    _, mask_ratio = sampling_ratio(bt, n_src, True) # generate mask_ratio
-                    masked_mixture = torch.unsqueeze(
-                        torch.sum(masked_tf_rep * mask_ratio, dim=1), dim=1
-                    )
-
-                    est_remixture = model.forward_decoder(masked_mixture)
-                    est_remixture_mix = pad_x_to_y(est_remixture, remixture)
-                    est_remixture_src = torch.sum(est_sources * source_ratio, dim=1)
-
-                    remix_score_src.append(sdr_score(remixture, est_remixture_src, f = loss_f))
-                    remix_score_mix.append(sdr_score(remixture, est_remixture_mix, f = loss_f))
+                    est_remixture = torch.sum(est_sources, dim=1)
+                    remix_score.append(utils.sdr_score(remixture, est_remixture, f = loss_f))
 
                 else:
                     est_remixture = torch.sum(est_sources * source_ratio, dim=1)
-                    remix_score_src.append(sdr_score(remixture, est_remixture, f = loss_f, cuda=False)) 
+                    remix_score.append(utils.sdr_score(remixture, est_remixture, f = loss, cuda=False)) 
 
-                sep_score.append(sdr_score(sources, est_sources, f = loss_f, cuda=False))
+                sep_score.append(utils.sdr_score(sources, est_sources, f = loss, cuda=False))
 
 #                 if debugging:
 #                     break
             
-    remix_score_src = 0 if not remix_score_src else remix_score_src
-    remix_score_mix = 0 if not remix_score_mix else remix_score_mix
     
-    return np.mean(sep_score), np.mean(remix_score_src), np.mean(remix_score_mix)
+    return np.mean(sep_score), np.mean(remix_score), 
 
 
 if __name__ == '__main__':

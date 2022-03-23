@@ -267,7 +267,7 @@ class Decoder(_EncDec):
         elif isinstance(filterbank, Encoder):
             return cls(filterbank.filterbank, is_pinv=True)
 
-    def forward(self, spec, length: Optional[int] = None, scalars=None) -> torch.Tensor:
+    def forward(self, spec, length: Optional[int] = None) -> torch.Tensor:
         """Applies transposed convolution to a TF representation.
 
         This is equivalent to overlap-add.

@@ -1,6 +1,10 @@
 # Don't Separate, Learn to Remix: End-to-End Neural Remixing with Joint Optimization
 Open-source code for paper - H. Yang, S. Firodiya, N.J. Bryan, M. Kim, "Don't Separate, Learn to Remix: End-to-End Neural Remixing with Joint Optimization."  ICASSP 2022 - 2022 IEEE International Conference on
 Acoustics, Speech and Signal Processing (ICASSP), 2022
+
+- Paper: https://arxiv.org/abs/2107.13634
+- Webpage: https://minjekim.com/research-projects/neural-remixer/
+  
 ## Prerequisites
 ### Environment
 - Python 3.6.0 <br>
